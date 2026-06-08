@@ -81,25 +81,6 @@ See [docs/THOUGHT_PROCESS.md](docs/THOUGHT_PROCESS.md) for:
 - One improvement with more time
 - One feature intentionally left out
 
-## Mandatory Submission Statement
-
-**How you prevented double-booking at the backend and why your solution remains reliable under concurrent requests:**
-
-> Double-booking is prevented using MongoDB's atomic `findOneAndUpdate` operation with a conditional filter `{ status: 'available' }` — since MongoDB guarantees document-level atomicity, when two concurrent booking requests arrive for the same slot, only one will find the document in 'available' state and update it to 'booked', while the other receives `null` and is returned a 409 Conflict. This eliminates the race condition inherent in read-then-write patterns and requires no external locks, queues, or transaction managers.
-
-## Deployment
-
-The application can be deployed to:
-
-- **Frontend + API:** Vercel (free)
-- **Database:** MongoDB Atlas (free tier)
-
-### Deploy on Vercel
-
-1. Push the repo to GitHub
-2. Import project on Vercel
-3. Set environment variables (`MONGODB_URI`, `JWT_SECRET`)
-4. Deploy
 
 ## License
 
