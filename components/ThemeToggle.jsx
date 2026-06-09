@@ -22,6 +22,7 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggle}
+      suppressHydrationWarning
       className="relative w-9 h-9 flex items-center justify-center rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
       aria-label="Toggle dark mode"
     >
