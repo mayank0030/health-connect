@@ -111,13 +111,21 @@ export default function ConfirmationPage() {
         </div>
       </div>
 
-      <div className="mt-6 text-center">
+      <div className="mt-6 space-y-3 text-center">
         <a href="/patient" className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium text-sm transition-colors">
           <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
           Search more doctors
         </a>
+        <div>
+          <a href={`/patient/cancel/${bookingId}`} className="inline-flex items-center text-red-500 hover:text-red-600 font-medium text-xs transition-colors">
+            <svg className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Cancel this booking
+          </a>
+        </div>
       </div>
     </div>
   );
