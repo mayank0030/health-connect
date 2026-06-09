@@ -1,13 +1,19 @@
 'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function DoctorLogin() {
+function LoginFormInner() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [registered, setRegistered] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('registered') === '1') setRegistered(true);
+  }, [searchParams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,14 +26,12 @@ export default function DoctorLogin() {
         body: JSON.stringify({ email: email.trim(), password }),
       });
       const data = await res.json();
-      console.log('Login response:', res.status, JSON.stringify(data));
       if (res.ok) {
         window.location.href = '/doctor/dashboard';
       } else {
         setError(data.error || `Login failed (${res.status})`);
       }
-    } catch (err) {
-      console.error('Login error:', err);
+    } catch {
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
@@ -48,6 +52,15 @@ export default function DoctorLogin() {
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Sign in to manage your appointments</p>
           </div>
 
+          {registered && (
+            <div className="bg-heal-50 dark:bg-emerald-950 border border-heal-200 dark:border-emerald-800 text-heal-700 dark:text-heal-400 rounded-xl p-3 text-sm mb-4 flex items-start gap-2 animate-slide-down">
+              <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              Registration successful! Please login with your credentials.
+            </div>
+          )}
+
           {error && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-xl p-3 text-sm mb-4 flex items-start gap-2">
               <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -60,47 +73,27 @@ export default function DoctorLogin() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input-field"
-                placeholder="doctor@example.com"
-              />
+              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input-field" placeholder="doctor@example.com" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Password</label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="input-field"
-                placeholder="Enter your password"
-              />
+              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="input-field" placeholder="Enter your password" />
             </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full btn-primary py-3 inline-flex items-center justify-center"
-            >
+            <button type="submit" disabled={loading} className="w-full btn-primary py-3 inline-flex items-center justify-center">
               {loading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Signing in...
-                </>
+                <><svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Signing in...</>
               ) : 'Sign In'}
             </button>
           </form>
         </div>
         <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-4">
-          Secure portal for registered doctors
+          New doctor? <a href="/doctor/register" className="text-primary-600 hover:underline font-medium">Register here</a>
         </p>
       </div>
     </div>
   );
+}
+
+export default function DoctorLogin() {
+  return <Suspense fallback={<div className="min-h-[70vh] flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" /></div>}><LoginFormInner /></Suspense>;
 }

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 const specializations = ['Cardiologist','Dermatologist','Pediatrician','Orthopedic','Gynecologist','Neurologist','ENT','Ophthalmologist','General Physician'];
@@ -31,7 +31,39 @@ export default function PatientSearch() {
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightIdx, setHighlightIdx] = useState(-1);
+  const inputRef = useRef(null);
+  const suggestRef = useRef(null);
   const router = useRouter();
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (suggestRef.current && !suggestRef.current.contains(e.target) && inputRef.current && !inputRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  useEffect(() => {
+    if (name.length < 1) { setSuggestions([]); setShowSuggestions(false); return; }
+    const timer = setTimeout(async () => {
+      try {
+        const p = new URLSearchParams({ name });
+        if (specialization) p.set('specialization', specialization);
+        if (location) p.set('location', location);
+        const res = await fetch(`/api/doctors/search?${p}`);
+        const data = await res.json();
+        setSuggestions(data.doctors || []);
+        setShowSuggestions(true);
+        setHighlightIdx(-1);
+      } catch {}
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [name, specialization, location]);
 
   const searchDoctors = async (e) => {
     e.preventDefault();
@@ -45,6 +77,19 @@ export default function PatientSearch() {
       setDoctors((await res.json()).doctors || []);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
+  };
+
+  const selectDoctor = (doc) => {
+    setShowSuggestions(false);
+    router.push(`/patient/doctor/${doc._id}`);
+  };
+
+  const handleKeyDown = (e) => {
+    if (!showSuggestions || !suggestions.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); setHighlightIdx(i => Math.min(i + 1, suggestions.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setHighlightIdx(i => Math.max(i - 1, 0)); }
+    else if (e.key === 'Enter' && highlightIdx >= 0) { e.preventDefault(); selectDoctor(suggestions[highlightIdx]); }
+    else if (e.key === 'Escape') { setShowSuggestions(false); }
   };
 
   const getInitials = (n) => n?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
@@ -69,9 +114,23 @@ export default function PatientSearch() {
               <input type="text" value={location} onChange={e => setLocation(e.target.value)} placeholder="City or area" className="input-field pl-10" />
             </div>
           </div>
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Doctor Name</label>
-            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Search by name" className="input-field" />
+            <input ref={inputRef} type="text" value={name} onChange={e => setName(e.target.value)} onKeyDown={handleKeyDown} onFocus={() => suggestions.length > 0 && setShowSuggestions(true)} placeholder="Type doctor name..." className="input-field" autoComplete="off" />
+            {showSuggestions && suggestions.length > 0 && (
+              <div ref={suggestRef} className="absolute z-50 left-0 right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-64 overflow-y-auto">
+                {suggestions.map((doc, idx) => (
+                  <button key={doc._id} type="button" onMouseDown={() => selectDoctor(doc)} onMouseEnter={() => setHighlightIdx(idx)} className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-colors ${idx === highlightIdx ? 'bg-primary-50 dark:bg-primary-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-xs shrink-0">{getInitials(doc.name)}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{doc.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{specializationIcons[doc.specialization] || '🏥'} {doc.specialization} &middot; {doc.location}</p>
+                    </div>
+                    <p className="text-sm font-semibold text-primary-600 shrink-0">₹{doc.consultationFee}</p>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         <div className="mt-4 flex justify-between items-center">
